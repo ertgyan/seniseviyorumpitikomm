@@ -1,0 +1,202 @@
+
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1220">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Beni seviyor musun?</title>
+  <style>
+    :root{
+      --bg: #0f172a;
+      --text: #e5e7eb;
+      --accent: #22c55e;
+      --card: rgba(255,255,255,0.04);
+      --border: rgba(255,255,255,0.06);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, Noto Sans, sans-serif;
+      color: var(--text);
+      background: radial-gradient(1200px 800px at 50% -10%, #1f2937, #0b1220 60%, #030712);
+      min-height: 100vh; min-height: 100svh; min-height: 100dvh;
+      display:flex; align-items:center; justify-content:center;
+      padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+      overflow:hidden;
+    }
+    .container{
+      width:min(680px, 92vw);
+      background: linear-gradient(180deg, var(--card), rgba(255,255,255,0.02));
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px 24px 40px;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+      text-align:center;
+      position: relative;
+      z-index: 1;
+      pointer-events: auto;
+    }
+    h1{ margin-top:0; font-size: clamp(28px, 4vw, 40px); letter-spacing: .3px; }
+    #buttons{ display:flex; gap:16px; justify-content:center; align-items:center; flex-wrap: wrap; margin: 18px 0 8px; }
+    .btn{
+      cursor:pointer; border:none; border-radius: 14px; padding: 14px 18px; font-size: 18px;
+      transition: transform .35s ease, background .2s, color .2s, box-shadow .2s, width .35s ease, height .35s ease, border-radius .35s ease, font-size .35s ease;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.25); user-select:none;
+      touch-action: manipulation;
+      pointer-events: auto;
+    }
+    .btn:active{ transform: translateY(1px) scale(0.99); }
+    .yes{ background: var(--accent); color: #052e16; font-weight: 700; min-width: 110px; position: relative; z-index: 2; }
+    .no{ background: #1f2937; color: #e5e7eb; border: 1px solid rgba(255,255,255,0.12); min-width: 110px; }
+    .no:hover{ background:#111827 }
+    .no.disabled{ opacity:.35; pointer-events:none; filter: grayscale(0.4); }
+    .hint{ opacity:.8; font-size:14px; margin:10px 0 0; }
+    .final{
+      margin-top:22px;
+      font-size: clamp(32px, 5vw, 80px);
+      font-weight: 900;
+      color: #f0fdf4;
+      text-shadow: 0 6px 24px rgba(34,197,94,.35);
+      white-space: pre-line;
+    }
+    .hidden{ display:none }
+
+    .yes.stage-0{ transform: scale(1); }
+    .yes.stage-1{ transform: scale(1.2); }
+    .yes.stage-2{ transform: scale(1.45); }
+    .yes.stage-3{ transform: scale(1.8); }
+    .yes.stage-4{ transform: scale(2.2); }
+    .yes.stage-5{ transform: scale(2.8); }
+
+    .yes.stage-6{
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh; height: 100svh; height: 100dvh;
+      border-radius: 0;
+      transform: none;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size: clamp(36px, 8vw, 96px);
+      box-shadow: none;
+    }
+
+    @keyframes pulse{ 0%{ box-shadow: 0 0 0 0 rgba(34,197,94,0.4); } 100%{ box-shadow: 0 0 0 20px rgba(34,197,94,0); } }
+    .yes.bump{ animation: pulse .5s ease; }
+
+    @media (max-width:420px){ #buttons{ flex-direction: column; } .btn{ width: 100%; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Beni seviyor musun?</h1>
+    <div id="buttons">
+      <button id="yesBtn" class="btn yes stage-0" type="button">Evet</button>
+      <button id="noBtn" class="btn no" type="button">Hayır</button>
+    </div>
+    <p id="hint" class="hint">"Hayır" dedikçe "Evet" büyür. 6 aşama sonra seçenek kalmaz 😄</p>
+    <div id="final" class="final hidden">Beni sevdiğini biliyordum ❤️
+Beyza Ertuğrul'u çoook seviyor 💕</div>
+  </div>
+
+  <canvas id="confettiCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:999;"></canvas>
+
+  <script>
+    (function(){
+      const yes = document.getElementById('yesBtn');
+      const no = document.getElementById('noBtn');
+      const final = document.getElementById('final');
+      const hint = document.getElementById('hint');
+      const buttons = document.getElementById('buttons');
+
+      let stage = 0;
+      const MAX_STAGE = 6;
+
+      function setStage(n){
+        stage = Math.min(n, MAX_STAGE);
+        yes.className = 'btn yes stage-' + stage;
+        if(stage < MAX_STAGE){
+          yes.classList.add('bump');
+          setTimeout(()=> yes.classList.remove('bump'), 520);
+          no.classList.remove('disabled');
+          no.style.opacity = '';
+          no.style.pointerEvents = '';
+          hint.textContent = '"Hayır" dedikçe "Evet" büyür. ' + (MAX_STAGE - stage) + ' aşama kaldı.';
+        } else {
+          no.classList.add('disabled');
+          no.style.opacity = '0';
+          no.style.pointerEvents = 'none';
+          hint.textContent = 'Seçenek kalmadı. Bir tek "Evet" var 😊';
+        }
+      }
+
+      function handleNo(e){
+        if(e) e.preventDefault();
+        if(stage < MAX_STAGE){
+          setStage(stage + 1);
+        }
+      }
+
+      function handleYes(e){
+        if(e) e.preventDefault();
+        buttons.style.display = 'none';
+        hint.style.display = 'none';
+        final.classList.remove('hidden');
+        startConfetti();
+      }
+
+      no.addEventListener('click', handleNo);
+      no.addEventListener('touchstart', handleNo, {passive:false});
+      yes.addEventListener('click', handleYes);
+      yes.addEventListener('touchstart', handleYes, {passive:false});
+
+      // Simple confetti
+      function startConfetti(){
+        const canvas = document.getElementById('confettiCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const confettis = [];
+        for(let i=0;i<150;i++){
+          confettis.push({
+            x: Math.random()*canvas.width,
+            y: Math.random()*canvas.height - canvas.height,
+            r: Math.random()*6+4,
+            d: Math.random()*0.5+0.5,
+            color: `hsl(${Math.random()*360}, 100%, 50%)`,
+            tilt: Math.random()*10 - 10
+          });
+        }
+        function draw(){
+          ctx.clearRect(0,0,canvas.width,canvas.height);
+          confettis.forEach(c=>{
+            ctx.beginPath();
+            ctx.fillStyle = c.color;
+            ctx.arc(c.x,c.y,c.r,0,Math.PI*2,true);
+            ctx.fill();
+          });
+          update();
+        }
+        function update(){
+          confettis.forEach(c=>{
+            c.y += c.d*4;
+            if(c.y > canvas.height){
+              c.y = -10;
+              c.x = Math.random()*canvas.width;
+            }
+          });
+        }
+        setInterval(draw,20);
+      }
+
+      setStage(0);
+    })();
+  </script>
+</body>
+</html>
